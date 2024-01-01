@@ -1,0 +1,51 @@
+version: '3'
+
+volumes:
+  n8n_storage:
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+    depends_on:
+      - n8n
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./data/nginx-conf/conf.d:/etc/nginx/conf.d:rw
+      - ./data/nginx-conf/images:/usr/share/nginx/html/images:rw
+      - ./data/letsencrypt-data:/etc/letsencrypt:rw
+    restart: always
+    tty: true
+    
+  n8n:
+    image: n8nio/n8n
+    container_name: n8n-container
+    # ports:
+    #   - 5678:5678
+    volumes:
+      - n8n_storage:/home/node/.n8n
+    restart: always
+    tty: true
+
+  postgres:
+    image: postgres
+    # ports:
+    #   - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=uUYrW0ZyZzPUNaGv
+    volumes:
+      - ./data/postgresql:/var/lib/postgresql/data
+    restart: always
+    tty: true
+  
+  # will monitor changes on n8n docker image
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: n8n
